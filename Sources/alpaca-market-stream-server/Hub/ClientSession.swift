@@ -21,9 +21,9 @@ final class ClientSession: @unchecked Sendable {
     
     private var drainTask: Task<Void, Never>?
 
-    public var trades: Set<String> = []
-    public var quotes: Set<String> = []
-    public var bars: Set<String> = []
+    var trades: Set<String> = []
+    var quotes: Set<String> = []
+    var bars: Set<String> = []
     
     
     init(id: String, ws: WebSocket, config: WSConfig) {

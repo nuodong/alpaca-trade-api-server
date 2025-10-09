@@ -6,23 +6,23 @@
 //
 import Foundation
 
- public struct SubscriptionRequestMessage: Codable,Sendable {
-    public var action: String = "subscription"
-    public var trades: [String]? = []
-    public var quotes: [String]? = []
-    public var bars: [String]? = []
+///Alpaca server will append these new values to existing ones
+struct SubscriptionRequestMessage: Codable,Sendable {
+    var action: String = "subscription"
+    var trades: [String]? = []
+    var quotes: [String]? = []
+    var bars: [String]? = []
     
-    public init() {
+    init() {
         
     }
-    public init( trades: [String]?,quotes: [String]?,bars: [String]?) {
-        self.action = "subscription"
+    init( trades: [String]?,quotes: [String]?,bars: [String]?) {
         self.trades = trades
         self.quotes = quotes
         self.bars = bars
     }
     
-    public func jsonString() async -> String {
+    func jsonString() async -> String {
         let data = (try? JSONEncoder().encode(self)) ?? Data()
         let jsonString = String(data: data, encoding: .utf8) ?? ""
         return jsonString

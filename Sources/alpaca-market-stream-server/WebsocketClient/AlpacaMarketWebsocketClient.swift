@@ -9,19 +9,19 @@ import Vapor
 import NIOCore
 
 ///This API connectes to Alpaca  WebSocket stream for real-time market data.
-public actor AlpacaMarketWebsocketClient {
+actor AlpacaMarketWebsocketClient {
     private let apiKey: String
     private let apiSecret: String
     
-    public var url: String
-    public let pingInterval: Int64 = 30
+    var url: String
+    let pingInterval: Int64 = 30
     
-    public var isConnected = false
-    public var isAuthenticated = false
+    var isConnected = false
+    var isAuthenticated = false
     
     private var websocket: WebSocket? = nil
     
-    public enum Feed: String {
+    enum Feed: String {
         case test
         case iex
         case iex_extended
@@ -29,7 +29,7 @@ public actor AlpacaMarketWebsocketClient {
         case sip
         
     }
-    public init(apiKey: String, apiSecret: String, feed: Feed) {
+    init(apiKey: String, apiSecret: String, feed: Feed) {
         self.apiKey = apiKey
         self.apiSecret = apiSecret
         self.url = "wss://stream.data.alpaca.markets/v2/\(feed.rawValue)"
@@ -45,7 +45,7 @@ public actor AlpacaMarketWebsocketClient {
         self.isConnected = isConnected
     }
     /// Auto connect, auto retry. Check property isAuthorzied before sending commands.
-    public func start(onConnect: @escaping @Sendable () async throws -> Void, onDisconnect: @escaping @Sendable () async throws -> Void, onReceiveMarketData: @escaping @Sendable (String) async throws-> Void) {
+    func start(onConnect: @escaping @Sendable () async throws -> Void, onDisconnect: @escaping @Sendable () async throws -> Void, onReceiveMarketData: @escaping @Sendable (String) async throws-> Void) {
         Task {[weak self ] in
             while true {
                 guard let self else {return}
@@ -131,18 +131,18 @@ public actor AlpacaMarketWebsocketClient {
         
     }
     
-    public func send(_ string: String) async throws{
+    func send(_ string: String) async throws{
         try await self.websocket?.send(string)
     }
     
-    public func send(dict: [String: Any]) async throws {
+    func send(dict: [String: Any]) async throws {
         if let data = try? JSONSerialization.data(withJSONObject: dict, options: []),
            let jsonString = String(data: data, encoding: .utf8) {
             try await self.websocket?.send(jsonString)
         }
     }
     
-    public func send(subscription: SubscriptionRequestMessage) async throws {
+    func send(subscription: SubscriptionRequestMessage) async throws {
         let jsonString = await subscription.jsonString()
         try await self.websocket?.send(jsonString)
     }
@@ -155,7 +155,7 @@ public actor AlpacaMarketWebsocketClient {
         self.websocket = nil
     }
     
-    public func stop() {
+    func stop() {
         let _ = self.websocket?.close(promise: nil)
         self.clean()
     }
