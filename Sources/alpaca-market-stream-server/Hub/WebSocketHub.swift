@@ -45,31 +45,7 @@ actor WebSocketHub {
                 await updateSubscription(trades: message.trades, quotes: message.quotes, bars: message.bars)
             } else {
                 // other market data, send back to client by checking which clients has which symbols
-                let sessions = await self.sessions
-                if let bars = try AlpacaBarMessage.loadFromString(text), let first = bars.first {
-                    let symbol = first.S
-                    for (_,session) in sessions {
-                        if await session.bars.contains(symbol) {
-                            try await session.ws.send(text)
-                        }
-                    }
-                }else if let trades = try AlpacaTradeMessage.loadFromString(text), let first = trades.first {
-                    let symbol = first.S
-                    for (_,session) in sessions {
-                        if await session.trades.contains(symbol) {
-                            try await session.ws.send(text)
-                        }
-                    }
-                } else if let quotes = try AlpacaQuoteMessage.loadFromString(text), let first = quotes.first {
-                    let symbol = first.S
-                    for (_,session) in sessions {
-                        if await session.quotes.contains(symbol) {
-                            try await session.ws.send(text)
-                        }
-                    }
-                } else {
-                    print("❌ unknown market data message:\n\(text)")
-                }
+                await distributeToClientSessions(text)
             }
         }
     }
@@ -95,15 +71,8 @@ actor WebSocketHub {
         
     }
     
-    func getSessionByWS(_ ws: WebSocket) -> ClientSession? {
-        return sessions.first(where: { $0.value === ws })?.value
-    }
-    
-    func getSessionIDByWS(_ ws: WebSocket) -> String? {
-        if let (id, _) = sessions.first(where: { $0.value === ws }) {
-            return id
-        }
-        return nil
+    func getSession(id: String) -> ClientSession? {
+        return sessions[id]
     }
     
     /// subscrbe to alpaca if new, save subscribed symbols to client session

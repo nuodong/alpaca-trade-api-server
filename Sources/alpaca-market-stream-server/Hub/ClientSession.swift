@@ -82,10 +82,7 @@ actor ClientSession {
                 if Task.isCancelled { break }
                 do {
                     try await withTimeout(self.config.writeTimeout) {
-                        //Always hop to the socket’s loop before using it
-                        self.ws.eventLoop.execute {
-                            self.ws.send(msg)
-                        }
+                        self.ws.send(msg)
                     }
                     timeoutStrikes = 0
                 } catch is CancellationError {

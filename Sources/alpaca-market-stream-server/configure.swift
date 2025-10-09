@@ -28,41 +28,43 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         
         //TODO: validate auth by http header, then save to session
         guard let id = req.headers.first(name: "app-device-id") else {
-            await closeWithAuthErrorResponse(ws)
+            Task {
+                await closeWithAuthErrorResponse(ws)
+            }
             return
         }
         
-        print("App Websocket Client id: \(id) authenticatd, add to sessions.")
-        let session = ClientSession(id: id, ws: ws, config: .init())
-//        await hub.addSession(session)
+        Task {
+            print("App Websocket Client id: \(id) authenticatd, add to sessions.")
+            let session = ClientSession(id: id, ws: ws, config: .init())
+            await hub.addSession(session)
+        }
+        
         
         // Text frames: echo back
         ws.onText { ws, text in
-            print("✉️ WS text: \(text)")
+            print("✉️ WS text (id: \(id): \(text)")
             //validate ws if authenticated
-//            guard let session = await hub.getSessionByWS(ws) else {
-//                //reject and close
-//                await closeWithAuthErrorResponse(ws)
-//                return
-//            }
-//            
-//            //handle subscribe request action
-//            if let subscribeRequest = try? AlpacaSubscriptionRequestMessage.loadFromString(text) {
-//                let response = AlpacaSubscriptionMessage(trades: subscribeRequest.trades, quotes: subscribeRequest.quotes, bars: subscribeRequest.bars)
-//                do {
-//                    try await hub.subscribe(id, subscribeRequest)
-//                    await session.enqueue(response.jsonString())
-//                } catch {
-//                    //TODO: hanle what?
-//                }
-//                
-//                return
-//            }
-//            
-//            //distribute market data
-//            if !text.isEmpty {
-//                await hub.distributeToClientSessions(text)
-//            }
+            guard let session = await hub.getSession(id: id) else {
+                //reject and close
+                print("not found the websocket session, to close it.")
+                await closeWithAuthErrorResponse(ws)
+                return
+            }
+            
+            //handle subscribe request action
+            if let subscribeRequest = try? AlpacaSubscriptionRequestMessage.loadFromString(text) {
+                let response = AlpacaSubscriptionMessage(trades: subscribeRequest.trades, quotes: subscribeRequest.quotes, bars: subscribeRequest.bars)
+                do {
+                    try await hub.subscribe(id, subscribeRequest)
+                    await session.enqueue(response.jsonString())
+                } catch {
+                    //TODO: hanle what?
+                }
+            } else {
+                print("❌ not recognized text from app client:  \(text) ")
+            }
+
         }
 
         // Binary frames: echo back
@@ -76,11 +78,13 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         
     }
     
-    @Sendable func closeWithAuthErrorResponse(_ ws: WebSocket) async {
-        print("❌ To close with AuthErrorResponse")
-        let error = AlpacaSuccessOrErrorMessage(T: "error", code: 401, msg: "rejected due to not authenticated.")
-        try? await ws.send(error.jsonString())
-        try? await Task.sleep(for: .seconds(0.5))
-        try? await ws.close()
-    }
+    
+}
+
+func closeWithAuthErrorResponse(_ ws: WebSocket) async {
+    print("❌ To close with AuthErrorResponse")
+    let error = AlpacaSuccessOrErrorMessage(T: "error", code: 401, msg: "rejected due to not authenticated.")
+    try? await ws.send(error.jsonString())
+    try? await Task.sleep(for: .seconds(0.5))
+    try? await ws.close()
 }
