@@ -1,5 +1,5 @@
 //
-//  SubscriptionRequestMessage.swift
+//  AlpacaSubscriptionRequestMessage.swift
 //  AlpacaMarketWebsocketClient
 //
 //  Created by Peijun Zhao on 10/8/25.
@@ -7,20 +7,11 @@
 import Foundation
 
 ///Alpaca server will append these new values to existing ones
-struct SubscriptionRequestMessage: Codable,Sendable {
+struct AlpacaSubscriptionRequestMessage: Codable,Sendable {
     var action: String = "subscription"
-    var trades: [String]? = []
-    var quotes: [String]? = []
-    var bars: [String]? = []
-    
-    init() {
-        
-    }
-    init( trades: [String]?,quotes: [String]?,bars: [String]?) {
-        self.trades = trades
-        self.quotes = quotes
-        self.bars = bars
-    }
+    var trades: [String]? = nil
+    var quotes: [String]? = nil
+    var bars: [String]? = nil
     
     func jsonString() async -> String {
         let data = (try? JSONEncoder().encode(self)) ?? Data()

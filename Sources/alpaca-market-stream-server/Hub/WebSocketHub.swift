@@ -89,7 +89,7 @@ class WebSocketHub {
         //TODO: remove from Alpaca if any of its subscriptions not shared used by others.
     }
     
-    func subscribe(_ id: String, _ subscription: SubscriptionRequestMessage) async throws {
+    func subscribe(_ id: String, _ subscription: AlpacaSubscriptionRequestMessage) async throws {
         guard let client = clients[id] else {
             return
         }

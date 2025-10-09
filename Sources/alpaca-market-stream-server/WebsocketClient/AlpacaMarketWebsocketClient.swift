@@ -142,7 +142,7 @@ actor AlpacaMarketWebsocketClient {
         }
     }
     
-    func send(subscription: SubscriptionRequestMessage) async throws {
+    func send(subscription: AlpacaSubscriptionRequestMessage) async throws {
         let jsonString = await subscription.jsonString()
         try await self.websocket?.send(jsonString)
     }

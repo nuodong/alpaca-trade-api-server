@@ -13,6 +13,5 @@
 struct WSConfig: Sendable {
     let queueCapacity: Int = 32                  // per-client buffer size
     let writeTimeout: Duration = .seconds(2)     // per-message write timeout
-    let disconnectOnOverflow: Bool = false       // true: kick laggards if buffer overflows
-    // Drop-oldest behavior is implemented via AsyncStream(bufferingOldest:)
+    let disconnectOnOverflow: Bool = true       // true: kick laggards if buffer overflows
 }
