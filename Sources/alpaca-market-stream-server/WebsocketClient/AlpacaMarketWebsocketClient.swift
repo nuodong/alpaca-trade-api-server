@@ -33,6 +33,7 @@ actor AlpacaMarketWebsocketClient {
         self.apiKey = apiKey
         self.apiSecret = apiSecret
         self.url = "wss://stream.data.alpaca.markets/v2/\(feed.rawValue)"
+        print("Alpaca websocket url: \(url)")
     }
     
     private func setWebSocket(_ webSocket: WebSocket) {

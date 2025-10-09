@@ -10,108 +10,118 @@ import Vapor
 // ===============================
 // Hub actor: manages clients + subscriptions
 // ===============================
-@MainActor
-class WebSocketHub {
-    private var clients: [String: ClientSession] = [:]
+
+///currently, one 1 alpaca websocket client is used. Call start() once.
+///when a app client's websocket is closed, hub will remove it from the sessions
+actor WebSocketHub {
+    var sessions: [String: ClientSession] = [:]
     //subscribed items from Alpaca
     private var trades: Set<String> = []
     private var quotes: Set<String> = []
     private var bars: Set<String> = []
-    
     private let config = WSConfig()
     
-    // Upstream hook (set by App after init)
-    private weak var alpaca: AlpacaMarketWebsocketClient?
+    private var alpaca: AlpacaMarketWebsocketClient
     
-    func attach(alpaca: AlpacaMarketWebsocketClient) {
+    init(alpaca: AlpacaMarketWebsocketClient) {
         self.alpaca = alpaca
     }
     func start() async throws{
-        await alpaca?.start { [weak self] in
+        await alpaca.start { [weak self] in
             guard let self else {return}
             //connected and authorized
             //resend subscription if reconnected
-            try await self.alpaca?.send(subscription: .init(trades: Array(self.trades), quotes: Array(self.quotes), bars: Array(self.bars)))
+            try await self.alpaca.send(subscription: .init(trades: Array(self.trades), quotes: Array(self.quotes), bars: Array(self.bars)))
         } onDisconnect: {
             // do nothing, wait for auto reconnect
         } onReceiveMarketData: {[weak self] text in
             guard let self else {return}
-            if let subscripitionMessage = try? AlpacaSubscriptionMessage.loadFromString(text) {
-                await MainActor.run {
-                    self.trades = Set(subscripitionMessage.trades ?? [])
-                    self.quotes = Set(subscripitionMessage.quotes ?? [])
-                    self.bars = Set(subscripitionMessage.bars ?? [])
-                }
+            if let message = try? AlpacaSubscriptionMessage.loadFromString(text) {
+                await updateSubscription(trades: message.trades, quotes: message.quotes, bars: message.bars)
             } else {
-                //market data, send back to client by checking which clients has which symbols
-                try await MainActor.run {
-                    if let bars = try AlpacaBarMessage.loadFromString(text), let first = bars.first {
-                        let symbol = first.S
-                        for (_,session) in clients {
-                            if session.bars.contains(symbol) {
-                                session.ws.send(text)
-                            }
-                        }
-                    } else if let trades = try AlpacaTradeMessage.loadFromString(text), let first = trades.first {
-                        let symbol = first.S
-                        for (_,session) in clients {
-                            if session.trades.contains(symbol) {
-                                session.ws.send(text)
-                            }
-                        }
-                    } else if let quotes = try AlpacaQuoteMessage.loadFromString(text), let first = quotes.first {
-                        let symbol = first.S
-                        for (_,session) in clients {
-                            if session.quotes.contains(symbol) {
-                                session.ws.send(text)
-                            }
+                // other market data, send back to client by checking which clients has which symbols
+                let sessions = await self.sessions
+                if let bars = try AlpacaBarMessage.loadFromString(text), let first = bars.first {
+                    let symbol = first.S
+                    for (_,session) in sessions {
+                        if let bars = await session.bars, bars.contains(symbol) {
+                            try await session.ws.send(text)
                         }
                     }
+                }else if let trades = try AlpacaTradeMessage.loadFromString(text), let first = trades.first {
+                    let symbol = first.S
+                    for (_,session) in sessions {
+                        if let trades = await session.trades, trades.contains(symbol) {
+                            try await session.ws.send(text)
+                        }
+                    }
+                } else if let quotes = try AlpacaQuoteMessage.loadFromString(text), let first = quotes.first {
+                    let symbol = first.S
+                    for (_,session) in sessions {
+                        if let quotes = await session.quotes, quotes.contains(symbol) {
+                            try await session.ws.send(text)
+                        }
+                    }
+                } else {
+                    print("❌ unknown market data message:\n\(text)")
                 }
             }
         }
-
     }
     
     // lifecycle
-    func add(id: String, ws: WebSocket) {
+    func add(id: String, ws: WebSocket) async {
         ws.onClose.whenComplete { [weak self] _ in
             Task { await self?.remove(id: id) }
         }
-        clients[id]?.close() // replace if duplicate
-        clients[id] = ClientSession(id: id, ws: ws, config: config)
-        clients[id]?.enqueue("connected")
+        await sessions[id]?.close() // replace if duplicate
+        sessions[id] = ClientSession(id: id, ws: ws, config: config)
+        
+        let message = AlpacaSuccessOrErrorMessage(T: "success", code: nil, msg: "connected")
+        await sessions[id]?.enqueue(message.jsonString())
     }
     
-    func remove(id: String)  {
-        clients.removeValue(forKey: id)?.close()
-        
+    func remove(id: String) async {
         //TODO: remove from Alpaca if any of its subscriptions not shared used by others.
+
+        await sessions.removeValue(forKey: id)?.close()
+        
     }
     
     func subscribe(_ id: String, _ subscription: AlpacaSubscriptionRequestMessage) async throws {
-        guard let client = clients[id] else {
+        guard let clientSession = sessions[id] else {
             return
         }
         //the app client always send the whole subsctipion in each request, empty is to unsubscribe all
-        //TODO: check if needed to send if not cached
-        try await alpaca?.send(subscription: subscription)
+        //TODO: check and only send not subscribed ones
+        //TODO: check unsubscribed data, if the new array from client app is less than old one, it is unsubscribe someone. compare with old one
+        try await alpaca.send(subscription: subscription)
         if let trades = subscription.trades, trades.count > 0 {
             self.trades = self.trades.union(trades)
-            client.trades = Set(trades)
         }
         if let quotes = subscription.quotes, quotes.count > 0 {
             self.quotes = self.trades.union(quotes)
-            client.quotes = Set(quotes)
         }
         if let bars = subscription.bars, bars.count > 0 {
             self.bars = self.trades.union(bars)
-            client.bars = Set(bars)
         }
+        await clientSession.updateSubscription(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
         //tell client
         let response = AlpacaSubscriptionMessage(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
-        await clients[id]?.enqueue(response)
+        await sessions[id]?.enqueue(response)
     }
     
+    ///when receive the response from alpaca server, update the subscribed array
+    func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
+        if let trades {
+            self.trades = Set(trades)
+        }
+        if let quotes {
+            self.quotes = Set(quotes)
+        }
+        if let bars {
+            self.bars = Set(bars)
+        }
+    }
     
 }

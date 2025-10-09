@@ -11,7 +11,8 @@
 // ===============================
 import Vapor
 
-final class ClientSession: @unchecked Sendable {
+///This is the websocet session from App client to this server.
+actor ClientSession {
     let id: String
     let ws: WebSocket
     private let config: WSConfig
@@ -21,10 +22,9 @@ final class ClientSession: @unchecked Sendable {
     
     private var drainTask: Task<Void, Never>?
 
-    var trades: Set<String> = []
-    var quotes: Set<String> = []
-    var bars: Set<String> = []
-    
+    var trades: [String]? = nil
+    var quotes: [String]? = nil
+    var bars: [String]? = nil
     
     init(id: String, ws: WebSocket, config: WSConfig) {
         self.id = id
@@ -36,7 +36,9 @@ final class ClientSession: @unchecked Sendable {
             cont = c
         }
         self.continuation = cont
-        startDrain()
+        Task {
+            await startDrain()
+        }
     }
     
     deinit {
@@ -49,6 +51,12 @@ final class ClientSession: @unchecked Sendable {
     
     func enqueue(_ subscriptionResponse: AlpacaSubscriptionMessage) async{
         continuation.yield(await subscriptionResponse.jsonString())
+    }
+    
+    func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
+        self.trades = trades
+        self.quotes = quotes
+        self.bars = bars
     }
     
     private func startDrain() {
