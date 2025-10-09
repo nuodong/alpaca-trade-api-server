@@ -19,7 +19,7 @@ import Testing
             try await client.send(sub)
             
             try await Task.sleep(for: .seconds(1))
-            sub = #"{"action":"subscribe","trades": ["BABA"], "quotes": ["BABA"], "bars": ["BABA","FFAI"]}"#
+            sub = #"{"action":"subscribe","trades": ["BABA","AMD","FFAI", "AAPL"], "quotes": ["BABA", "AMD","FFAI", "AAPL"], "bars": ["BABA","FFAI", "AAPL"]}"#
             try await client.send(sub)
             
             try await Task.sleep(for: .seconds(1))

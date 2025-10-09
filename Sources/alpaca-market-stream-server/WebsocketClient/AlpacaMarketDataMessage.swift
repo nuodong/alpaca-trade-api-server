@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+typealias StockSymbol = String
 protocol AlpacaMarketDataMessage: Codable, Sendable {
     var T: String {get}
 }

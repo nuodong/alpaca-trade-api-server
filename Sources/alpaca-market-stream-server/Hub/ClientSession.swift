@@ -22,9 +22,9 @@ actor ClientSession {
     
     private var drainTask: Task<Void, Never>?
 
-    var trades: [String] = []
-    var quotes: [String] = []
-    var bars: [String] = []
+    var trades: [StockSymbol] = []
+    var quotes: [StockSymbol] = []
+    var bars: [StockSymbol] = []
     
     init(id: String, ws: WebSocket, config: WSConfig) {
         self.id = id
@@ -46,12 +46,20 @@ actor ClientSession {
     }
     
     func enqueue(_ msg: String) {
+        print("enqueue message to alpaca: ", msg)
         continuation.yield(msg)
     }
     
     func enqueue(_ subscriptionResponse: AlpacaSubscriptionMessage) async{
-        continuation.yield(subscriptionResponse.jsonString())
+        enqueue(subscriptionResponse.jsonString())
     }
+    
+    func enqueue(_ dataArray: [String]) async{
+        let data = try? JSONEncoder().encode(dataArray)
+        let json = String(data: data ?? Data(), encoding: .utf8) ?? ""
+        enqueue(json)
+    }
+
     
     func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
         if let trades {self.trades = trades}
@@ -74,7 +82,10 @@ actor ClientSession {
                 if Task.isCancelled { break }
                 do {
                     try await withTimeout(self.config.writeTimeout) {
-                        try await self.ws.send(msg)
+                        //Always hop to the socket’s loop before using it
+                        self.ws.eventLoop.execute {
+                            self.ws.send(msg)
+                        }
                     }
                     timeoutStrikes = 0
                 } catch is CancellationError {

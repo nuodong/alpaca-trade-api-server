@@ -67,7 +67,7 @@ actor AlpacaMarketWebsocketClient {
             
             ws.onText {[weak self] ws, text in
                 guard let self else {return}
-                print("📩", text)
+                print("📩", Date().stringFormat(.`HH:mm:ss.SSS`),"\n",text)
                 
                 do {
                     
@@ -146,6 +146,7 @@ actor AlpacaMarketWebsocketClient {
     
     func send(subscription: AlpacaSubscriptionRequestMessage) async throws {
         let jsonString = await subscription.jsonString()
+        print("To send", jsonString)
         try await self.websocket?.send(jsonString)
     }
     
