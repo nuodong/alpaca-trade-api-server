@@ -44,21 +44,21 @@ actor WebSocketHub {
                 if let bars = try AlpacaBarMessage.loadFromString(text), let first = bars.first {
                     let symbol = first.S
                     for (_,session) in sessions {
-                        if let bars = await session.bars, bars.contains(symbol) {
+                        if await session.bars.contains(symbol) {
                             try await session.ws.send(text)
                         }
                     }
                 }else if let trades = try AlpacaTradeMessage.loadFromString(text), let first = trades.first {
                     let symbol = first.S
                     for (_,session) in sessions {
-                        if let trades = await session.trades, trades.contains(symbol) {
+                        if await session.trades.contains(symbol) {
                             try await session.ws.send(text)
                         }
                     }
                 } else if let quotes = try AlpacaQuoteMessage.loadFromString(text), let first = quotes.first {
                     let symbol = first.S
                     for (_,session) in sessions {
-                        if let quotes = await session.quotes, quotes.contains(symbol) {
+                        if await session.quotes.contains(symbol) {
                             try await session.ws.send(text)
                         }
                     }
@@ -70,9 +70,11 @@ actor WebSocketHub {
     }
     
     // lifecycle
-    func add(id: String, ws: WebSocket) async {
+    func addSession(_ session: ClientSession) async {
+        let id = session.id
+        let ws = session.ws
         ws.onClose.whenComplete { [weak self] _ in
-            Task { await self?.remove(id: id) }
+            Task { await self?.removeSession(id: id) }
         }
         await sessions[id]?.close() // replace if duplicate
         sessions[id] = ClientSession(id: id, ws: ws, config: config)
@@ -81,7 +83,7 @@ actor WebSocketHub {
         await sessions[id]?.enqueue(message.jsonString())
     }
     
-    func remove(id: String) async {
+    func removeSession(id: String) async {
         //TODO: remove from Alpaca if any of its subscriptions not shared used by others.
 
         await sessions.removeValue(forKey: id)?.close()

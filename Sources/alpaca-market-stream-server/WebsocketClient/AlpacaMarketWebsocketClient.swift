@@ -65,16 +65,6 @@ actor AlpacaMarketWebsocketClient {
             print("✅ Alpaca websocket connected.")
             ws.pingInterval = .seconds(self.pingInterval)
             
-            Task {[weak self]  in
-                guard let self else {return}
-                await self.setWebSocket(ws)
-                await self.setConnected(true)
-                try await Task.sleep(for: .seconds(1))
-                //send auth
-                let auth = #"{"action":"auth","key":"\#(self.apiKey)","secret":"\#(self.apiSecret)"}"#
-                try await ws.send(auth)
-            }
-            
             ws.onText {[weak self] ws, text in
                 guard let self else {return}
                 print("📩", text)
@@ -120,7 +110,17 @@ actor AlpacaMarketWebsocketClient {
                     await self?.clean()
                     try await onDisconnect()
                 }
-                
+            }
+            
+            //authenticate
+            Task {[weak self]  in
+                guard let self else {return}
+                await self.setWebSocket(ws)
+                await self.setConnected(true)
+                try await Task.sleep(for: .seconds(1))
+                //send auth
+                let auth = #"{"action":"auth","key":"\#(self.apiKey)","secret":"\#(self.apiSecret)"}"#
+                try await ws.send(auth)
             }
             
         }.whenFailure { error in
@@ -129,6 +129,7 @@ actor AlpacaMarketWebsocketClient {
                 await self?.clean()
             }
         }
+        
         
     }
     

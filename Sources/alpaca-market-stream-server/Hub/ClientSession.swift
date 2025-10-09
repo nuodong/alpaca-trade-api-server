@@ -22,9 +22,9 @@ actor ClientSession {
     
     private var drainTask: Task<Void, Never>?
 
-    var trades: [String]? = nil
-    var quotes: [String]? = nil
-    var bars: [String]? = nil
+    var trades: [String] = []
+    var quotes: [String] = []
+    var bars: [String] = []
     
     init(id: String, ws: WebSocket, config: WSConfig) {
         self.id = id
@@ -50,13 +50,13 @@ actor ClientSession {
     }
     
     func enqueue(_ subscriptionResponse: AlpacaSubscriptionMessage) async{
-        continuation.yield(await subscriptionResponse.jsonString())
+        continuation.yield(subscriptionResponse.jsonString())
     }
     
     func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
-        self.trades = trades
-        self.quotes = quotes
-        self.bars = bars
+        if let trades {self.trades = trades}
+        if let quotes {self.quotes = quotes}
+        if let bars {self.bars = bars}
     }
     
     private func startDrain() {

@@ -12,7 +12,7 @@ protocol AlpacaMarketDataMessage: Codable, Sendable {
 }
 
 extension AlpacaMarketDataMessage {
-    func jsonString() async -> String {
+    func jsonString() -> String {
         let data = (try? JSONEncoder().encode(self)) ?? Data()
         let jsonString = String(data: data, encoding: .utf8) ?? ""
         return jsonString
