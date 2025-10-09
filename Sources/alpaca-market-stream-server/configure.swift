@@ -43,7 +43,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         
         // Text frames: echo back
         ws.onText { ws, text in
-            print("✉️ WS text (id: \(id): \(text)")
+            print(" WS text (id: \(id): \(text)")
             //validate ws if authenticated
             guard let session = await hub.getSession(id: id) else {
                 //reject and close
@@ -54,10 +54,8 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
             
             //handle subscribe request action
             if let subscribeRequest = try? AlpacaSubscriptionRequestMessage.loadFromString(text) {
-                let response = AlpacaSubscriptionMessage(trades: subscribeRequest.trades, quotes: subscribeRequest.quotes, bars: subscribeRequest.bars)
                 do {
                     try await hub.subscribe(id, subscribeRequest)
-                    await session.enqueue(response.jsonString())
                 } catch {
                     //TODO: hanle what?
                 }

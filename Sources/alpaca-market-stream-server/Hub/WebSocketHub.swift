@@ -68,6 +68,7 @@ actor WebSocketHub {
         //TODO: remove from Alpaca if any of its subscriptions not shared used by others.
 
         await sessions.removeValue(forKey: id)?.close()
+        print("Client \(id) is removed from hub")
         
     }
     
@@ -96,7 +97,7 @@ actor WebSocketHub {
         await clientSession.updateSubscription(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
         //tell client
         let response = AlpacaSubscriptionMessage(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
-        await sessions[id]?.enqueue(response)
+        await clientSession.enqueue(response)
     }
     
     ///when receive the response from alpaca server, update the subscribed array

@@ -46,7 +46,7 @@ actor ClientSession {
     }
     
     func enqueue(_ msg: String) {
-        print("enqueue message to alpaca: ", msg)
+        print("enqueue message to app websocket client: ", msg)
         continuation.yield(msg)
     }
     

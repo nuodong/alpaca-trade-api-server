@@ -14,7 +14,7 @@ actor AlpacaMarketWebsocketClient {
     private let apiSecret: String
     
     var url: String
-    let pingInterval: Int64 = 30
+    let pingInterval: Int64 = 10
     
     var isConnected = false
     var isAuthenticated = false
@@ -129,27 +129,25 @@ actor AlpacaMarketWebsocketClient {
                 await self?.clean()
             }
         }
-        
-        
     }
     
     func send(_ string: String) async throws{
+        print("to send msg to alpaca: \(string)")
         try await self.websocket?.send(string)
     }
     
     func send(dict: [String: Any]) async throws {
         if let data = try? JSONSerialization.data(withJSONObject: dict, options: []),
            let jsonString = String(data: data, encoding: .utf8) {
-            try await self.websocket?.send(jsonString)
+            try await send(jsonString)
         }
     }
     
     func send(subscription: AlpacaSubscriptionRequestMessage) async throws {
         let jsonString = await subscription.jsonString()
         print("To send", jsonString)
-        try await self.websocket?.send(jsonString)
+        try await send(jsonString)
     }
-    
     
     ///reset state and clean resources
     private func clean() {

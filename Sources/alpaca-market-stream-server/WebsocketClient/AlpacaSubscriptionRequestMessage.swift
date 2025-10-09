@@ -8,7 +8,7 @@ import Foundation
 
 ///Alpaca server will append these new values to existing ones
 struct AlpacaSubscriptionRequestMessage: Codable,Sendable {
-    var action: String = "subscription"
+    var action: String = "subscribe"
     var trades: [String]? = nil
     var quotes: [String]? = nil
     var bars: [String]? = nil
