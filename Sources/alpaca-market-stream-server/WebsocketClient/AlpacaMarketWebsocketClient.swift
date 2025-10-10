@@ -72,7 +72,7 @@ actor AlpacaMarketWebsocketClient {
                 do {
                     
                     //handle connect , authentication, error here. Let callback handle others
-                    if let message = try? AlpacaSuccessOrErrorMessage.loadFromString(text) {
+                    if let message = AlpacaSuccessOrErrorMessage.loadFromString(text) {
                         if message.T == "success", message.msg == "connected" {
                             //do nothing
                         } else if message.T == "success", message.msg == "authenticated" {

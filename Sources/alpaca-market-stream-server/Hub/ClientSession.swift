@@ -46,20 +46,21 @@ actor ClientSession {
     }
     
     func enqueue(_ msg: String) {
-        print("enqueue message to app websocket client: ", msg)
+        print("enqueue message to app websocket client: \(msg)")
         continuation.yield(msg)
     }
     
-    func enqueue(_ subscriptionResponse: AlpacaSubscriptionMessage) async{
-        enqueue(subscriptionResponse.jsonString())
+    func enqueue(codable: Codable) {
+        let data = (try? JSONEncoder().encode(codable)) ?? Data()
+        let jsonString = String(data: data, encoding: .utf8) ?? ""
+        enqueue(jsonString)
     }
     
-    func enqueue(_ dataArray: [String]) async{
-        let data = try? JSONEncoder().encode(dataArray)
-        let json = String(data: data ?? Data(), encoding: .utf8) ?? ""
-        enqueue(json)
+    func enqueue<T: Encodable>(codableArray: [T]){
+        let data = (try? JSONEncoder().encode(codableArray)) ?? Data()
+        let jsonString = String(data: data, encoding: .utf8) ?? ""
+        enqueue(jsonString)
     }
-
     
     func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
         if let trades {self.trades = trades}

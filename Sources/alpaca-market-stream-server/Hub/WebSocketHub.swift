@@ -41,7 +41,7 @@ actor WebSocketHub {
             // do nothing, wait for auto reconnect
         } onReceiveMarketData: {[weak self] text in
             guard let self else {return}
-            if let message = try? AlpacaSubscriptionMessage.loadFromString(text) {
+            if let message = AlpacaSubscriptionAckMessage.loadFromStringArray(text) {
                 await updateSubscription(trades: message.trades, quotes: message.quotes, bars: message.bars)
             } else {
                 // other market data, send back to client by checking which clients has which symbols
@@ -61,7 +61,7 @@ actor WebSocketHub {
         sessions[id] = ClientSession(id: id, ws: ws, config: config)
         
         let message = AlpacaSuccessOrErrorMessage(T: "success", code: nil, msg: "connected")
-        await sessions[id]?.enqueue(message.jsonString())
+        await sessions[id]?.enqueue(codable: message)
     }
     
     func removeSession(id: String) async {
@@ -96,8 +96,8 @@ actor WebSocketHub {
         }
         await clientSession.updateSubscription(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
         //tell client
-        let response = AlpacaSubscriptionMessage(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
-        await clientSession.enqueue(response)
+        let response = AlpacaSubscriptionAckMessage(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
+        await clientSession.enqueue(codable: response)
     }
     
     ///when receive the response from alpaca server, update the subscribed array
@@ -117,56 +117,73 @@ actor WebSocketHub {
     func distributeToClientSessions(_ text: String) async {
         //Alpaca returned market data array may contains different data, different stocks in one websocket response
         //[String] contains the market data json string, such as {"T":"q","S":"BABA","bx":"V","bp":172,"bs":1,"ax":"V","ap":172.43,"as":2,"c":["R"],"z":"A","t":"2025-10-09T18:24:00.412001659Z"}
-        var trades: [StockSymbol: [String]] = [:]
-        var quotes: [StockSymbol: [String]] = [:]
-        var bars: [StockSymbol: [String]] = [:]
+        var trades: [StockSymbol: [AlpacaTradeMessage]] = [:]
+        var quotes: [StockSymbol: [AlpacaQuoteMessage]] = [:]
+        var bars: [StockSymbol: [AlpacaBarMessage]] = [:]
         
         //decode into 3 types of array
-        if let items = try? AlpacaTradeMessage.loadFromString(text) {
+        if let items = AlpacaTradeMessage.loadFromStringArray(text) {
             for item in items {
                 if trades[item.S] == nil {
-                    trades[item.S] = [item.jsonString()]
+                    trades[item.S] = [item]
                 } else {
-                    trades[item.S]?.append(item.jsonString())
+                    trades[item.S]?.append(item)
                 }
             }
         }
-        if let items = try? AlpacaQuoteMessage.loadFromString(text) {
+        if let items = AlpacaQuoteMessage.loadFromStringArray(text) {
             for item in items {
                 if quotes[item.S] == nil {
-                    quotes[item.S] = [item.jsonString()]
+                    quotes[item.S] = [item]
                 } else {
-                    quotes[item.S]?.append(item.jsonString())
+                    quotes[item.S]?.append(item)
                 }
             }
         }
-        if let items = try? AlpacaBarMessage.loadFromString(text) {
+        if let items = AlpacaBarMessage.loadFromStringArray(text) {
             for item in items {
                 if bars[item.S] == nil {
-                    bars[item.S] = [item.jsonString()]
+                    bars[item.S] = [item]
                 } else {
-                    bars[item.S]?.append(item.jsonString())
+                    bars[item.S]?.append(item)
                 }
             }
         }
         
         //distribute to app client
         for session in sessions.values {
-            var records: [String] = [] //json string of different market data
+            var tradeRecords: [AlpacaTradeMessage] = []
             let commonTradeSymbols = await Set(session.trades).intersection(trades.keys)
             for symbol in commonTradeSymbols {
-                records.append(contentsOf: trades[symbol] ?? [])
+                if let array = trades[symbol] {
+                    tradeRecords.append(contentsOf:  array)
+                }
             }
+            if !tradeRecords.isEmpty {
+                await session.enqueue(codableArray: tradeRecords)
+            }
+            
+            var quoteRecords: [AlpacaQuoteMessage] = []
             let commonQuoteSymbols = await Set(session.quotes).intersection(quotes.keys)
             for symbol in commonQuoteSymbols {
-                records.append(contentsOf: quotes[symbol] ?? [])
+                if let array = quotes[symbol] {
+                    quoteRecords.append(contentsOf:  array)
+                }
             }
+            if !quoteRecords.isEmpty {
+                await session.enqueue(codableArray: quoteRecords)
+            }
+            
+            var barRecords: [AlpacaQuoteMessage] = []
             let commonBarSymbols = await Set(session.bars).intersection(bars.keys)
             for symbol in commonBarSymbols {
-                records.append(contentsOf: bars[symbol] ?? [])
+                if let array = quotes[symbol] {
+                    barRecords.append(contentsOf:  array)
+                }
             }
-            print("➡️ distribute to client \(session.id), data \(records)")
-            await session.enqueue(records)
+            if !barRecords.isEmpty {
+                await session.enqueue(codableArray: barRecords)
+            }
         }
     }
 }

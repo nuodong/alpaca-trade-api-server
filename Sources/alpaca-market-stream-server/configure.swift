@@ -54,7 +54,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
             }
             
             //handle subscribe request action
-            if let subscribeRequest = try? AlpacaSubscriptionRequestMessage.loadFromString(text) {
+            if let subscribeRequest = AlpacaSubscriptionRequestMessage.loadFromString(text) {
                 do {
                     try await hub.subscribe(id, subscribeRequest)
                 } catch {

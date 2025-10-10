@@ -19,9 +19,12 @@ struct AlpacaSubscriptionRequestMessage: Codable,Sendable {
         return jsonString
     }
     
-    static func loadFromString(_ text: String) throws -> AlpacaSubscriptionRequestMessage{
+    static func loadFromString(_ text: String) -> AlpacaSubscriptionRequestMessage?{
         let data = text.data(using: .utf8) ?? Data()
-        let message = try JSONDecoder().decode(AlpacaSubscriptionRequestMessage.self, from: data)
+        let message = try? JSONDecoder().decode(AlpacaSubscriptionRequestMessage.self, from: data)
+        guard message?.action == "subscribe" else {
+            return nil
+        }
         return message
     }
 }
