@@ -27,6 +27,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         req.logger.info("WS connected from \(req.remoteAddress?.description ?? "unknown")")
         
         //TODO: validate auth by http header, then save to session
+        //All async functons are not allowed in this level, otherwise server will crash
         guard let id = req.headers.first(name: "app-device-id") else {
             Task {
                 await closeWithAuthErrorResponse(ws)
@@ -45,7 +46,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         ws.onText { ws, text in
             print(" WS text (id: \(id): \(text)")
             //validate ws if authenticated
-            guard let session = await hub.getSession(id: id) else {
+            guard let _ = await hub.getSession(id: id) else {
                 //reject and close
                 print("not found the websocket session, to close it.")
                 await closeWithAuthErrorResponse(ws)
@@ -72,11 +73,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         }
         
         //ws.onClose.whenComplete{} is registered in Hub when adding the session, no action here.
-        
-        
     }
-    
-    
 }
 
 func closeWithAuthErrorResponse(_ ws: WebSocket) async {
