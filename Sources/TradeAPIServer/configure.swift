@@ -10,7 +10,7 @@ import Vapor
 import AlpacaMarketDataHub
 
 // MARK: - Configure
-func configure(_ app: Application, _ hub: WebSocketHub) throws {
+func configure(_ app: Application, _ hub: AlpacaMarketDataHub) throws {
     // Listen on all interfaces, port 8080
     app.http.server.configuration.address = .hostname("0.0.0.0", port: 8080)
 

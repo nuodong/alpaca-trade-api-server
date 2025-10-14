@@ -7,6 +7,8 @@ struct AppMain {
         var env = try Environment.detect()
         try LoggingSystem.bootstrap(from: &env)
 
+        let serverConfig = try ServerConfig.load(configFile: "/opt/zeple/trade/serverconfig.json")
+        
         let app = try await Application.make(env)
         defer {
             Task {
@@ -14,7 +16,10 @@ struct AppMain {
             }
         }
 
-        let alpacaHub = WebSocketHub(alpaca: .init(apiKey: "PKK5J916VK887J82WPMF", apiSecret: "bTEAEeC7XCXiEgYhjmDvjntAsWRTCa7ayDcqnqZc", feed: .iex_extended))
+        let alpacaAccount = serverConfig.alpacapaperaccount
+        //let alpacaAccount = serverConfig.alpacaliveaccount
+        
+        let alpacaHub = AlpacaMarketDataHub(alpaca: .init(apiKey: alpacaAccount.alpaca_api_key, apiSecret: alpacaAccount.alpaca_api_secret, feed: .iex_extended))
         try configure(app, alpacaHub)
         try await alpacaHub.start()
 

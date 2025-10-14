@@ -1,5 +1,5 @@
 //
-//  WebSocketHub.swift
+//  AlpacaMarketDataHub.swift
 //  AlpacaMarketWebsocketClient
 //
 //  Created by Peijun Zhao on 10/8/25.
@@ -13,7 +13,7 @@ import Vapor
 
 ///currently, one 1 alpaca websocket client is used. Call start() once.
 ///when a app client's websocket is closed, hub will remove it from the sessions
-public actor WebSocketHub {
+public actor AlpacaMarketDataHub {
     var sessions: [String: ClientSession] = [:]
     //subscribed items from Alpaca
     private var trades: Set<String> = []

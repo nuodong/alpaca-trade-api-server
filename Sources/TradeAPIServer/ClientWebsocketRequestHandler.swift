@@ -11,7 +11,7 @@ import AlpacaMarketDataHub
 
 /// To handle the ws request from app client to trader api server
 struct ClientWebsocketRequestHandler {
-    static func handleAppClientWSRequest(id: String, hub: WebSocketHub, ws: WebSocket, text: String) async {
+    static func handleAppClientWSRequest(id: String, hub: AlpacaMarketDataHub, ws: WebSocket, text: String) async {
         print(" WS text (id: \(id): \(text)")
         //validate ws if authenticated
         guard let _ = await hub.getSession(id: id) else {
