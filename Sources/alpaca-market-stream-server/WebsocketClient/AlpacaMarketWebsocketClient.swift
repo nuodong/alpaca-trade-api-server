@@ -73,6 +73,7 @@ actor AlpacaMarketWebsocketClient {
                     
                     //handle connect , authentication, error here. Let callback handle others
                     if let message = AlpacaSuccessOrErrorMessage.loadFromString(text) {
+                        print("it's a status message.")
                         if message.T == "success", message.msg == "connected" {
                             //do nothing
                         } else if message.T == "success", message.msg == "authenticated" {
@@ -89,6 +90,7 @@ actor AlpacaMarketWebsocketClient {
                             print("❌ Error, Unknow AlpacaSuccessOrErrorMessage \(message)")
                         }
                     } else {
+                        print("it's a data message.")
                         try await onReceiveMarketData(text)
                     }
                     

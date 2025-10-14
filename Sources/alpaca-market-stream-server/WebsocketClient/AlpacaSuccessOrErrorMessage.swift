@@ -11,7 +11,7 @@ import Foundation
 struct AlpacaSuccessOrErrorMessage: AlpacaMarketDataMessage {
     let T: String
     let code: Int? //406: connection limit exceeded, 401: not authenticated
-    let msg: String? //"connected", authenticated"
+    let msg: String //"connected", authenticated"
     
     static func loadFromString(_ text: String)  -> AlpacaSuccessOrErrorMessage?{
         let data = text.data(using: .utf8) ?? Data()

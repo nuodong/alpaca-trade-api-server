@@ -28,6 +28,7 @@ actor WebSocketHub {
     }
     func start() async throws{
         await alpaca.start { [weak self] in
+            //on connected, authenticatd
             guard let self else {return}
             let trades = await self.trades
             let quotes = await self.quotes
@@ -40,10 +41,13 @@ actor WebSocketHub {
         } onDisconnect: {
             // do nothing, wait for auto reconnect
         } onReceiveMarketData: {[weak self] text in
+            print("* hub start processing the msg")
             guard let self else {return}
             if let message = AlpacaSubscriptionAckMessage.loadFromStringArray(text) {
+                print("**** it's a sub ack")
                 await updateSubscription(trades: message.trades, quotes: message.quotes, bars: message.bars)
             } else {
+                print("**** it's a data msg, to distribute now")
                 // other market data, send back to client by checking which clients has which symbols
                 await distributeToClientSessions(text)
             }
@@ -89,10 +93,10 @@ actor WebSocketHub {
             self.trades = self.trades.union(trades)
         }
         if let quotes = subscription.quotes, quotes.count > 0 {
-            self.quotes = self.trades.union(quotes)
+            self.quotes = self.quotes.union(quotes)
         }
         if let bars = subscription.bars, bars.count > 0 {
-            self.bars = self.trades.union(bars)
+            self.bars = self.bars.union(bars)
         }
         await clientSession.updateSubscription(trades: subscription.trades, quotes: subscription.quotes, bars: subscription.bars)
         //tell client
@@ -150,10 +154,13 @@ actor WebSocketHub {
             }
         }
         
+        print("*** decoded: ", trades, quotes, bars)
+        
         //distribute to app client
         for session in sessions.values {
             var tradeRecords: [AlpacaTradeMessage] = []
             let commonTradeSymbols = await Set(session.trades).intersection(trades.keys)
+            print("*** commonTradeSymbols: ",commonTradeSymbols)
             for symbol in commonTradeSymbols {
                 if let array = trades[symbol] {
                     tradeRecords.append(contentsOf:  array)
@@ -174,10 +181,10 @@ actor WebSocketHub {
                 await session.enqueue(codableArray: quoteRecords)
             }
             
-            var barRecords: [AlpacaQuoteMessage] = []
+            var barRecords: [AlpacaBarMessage] = []
             let commonBarSymbols = await Set(session.bars).intersection(bars.keys)
             for symbol in commonBarSymbols {
-                if let array = quotes[symbol] {
+                if let array = bars[symbol] {
                     barRecords.append(contentsOf:  array)
                 }
             }
