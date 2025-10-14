@@ -74,7 +74,6 @@ public actor WebSocketHub {
 
         await sessions.removeValue(forKey: id)?.close()
         print("Client \(id) is removed from hub")
-        
     }
     
     public func getSession(id: String) -> ClientSession? {

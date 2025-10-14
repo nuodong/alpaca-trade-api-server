@@ -11,8 +11,8 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .executable(
-            name: "TradeServer",
-            targets: ["TradeServer"]
+            name: "TradeAPIServer",
+            targets: ["TradeAPIServer"]
         ),
         .library(name: "AlpacaMarketDataHub", targets: ["AlpacaMarketDataHub"]),
         .library(name: "AlpacaTradingAPI", targets: ["AlpacaTradingAPI"]),
@@ -43,7 +43,7 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "TradeServer",
+            name: "TradeAPIServer",
             dependencies: [
                 .target(name: "AlpacaMarketDataHub"),
                 .target(name: "TradingEngine"),

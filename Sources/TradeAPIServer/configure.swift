@@ -31,7 +31,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         //All async functons are not allowed in this level, otherwise server will crash
         guard let id = req.headers.first(name: "app-device-id") else {
             Task {
-                await closeWithAuthErrorResponse(ws)
+                await ClientWebsocketRequestHandler.closeWithAuthErrorResponse(ws)
             }
             return
         }
@@ -45,26 +45,7 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         
         // Text frames: echo back
         ws.onText { ws, text in
-            print(" WS text (id: \(id): \(text)")
-            //validate ws if authenticated
-            guard let _ = await hub.getSession(id: id) else {
-                //reject and close
-                print("not found the websocket session, to close it.")
-                await closeWithAuthErrorResponse(ws)
-                return
-            }
-            
-            //handle subscribe request action
-            if let subscribeRequest = AlpacaSubscriptionRequestMessage.loadFromString(text) {
-                do {
-                    print("**** hub to add subscription \(subscribeRequest) for client: ", id)
-                    try await hub.subscribe(id, subscribeRequest)
-                } catch {
-                    //TODO: hanle what?
-                }
-            } else {
-                print("❌ not recognized text from app client:  \(text) ")
-            }
+            await ClientWebsocketRequestHandler.handleAppClientWSRequest(id: id, hub: hub, ws: ws, text: text)
 
         }
 
@@ -76,12 +57,8 @@ func configure(_ app: Application, _ hub: WebSocketHub) throws {
         
         //ws.onClose.whenComplete{} is registered in Hub when adding the session, no action here.
     }
+
+
 }
 
-func closeWithAuthErrorResponse(_ ws: WebSocket) async {
-    print("❌ To close with AuthErrorResponse")
-    let error = AlpacaSuccessOrErrorMessage(T: "error", code: 401, msg: "rejected due to not authenticated.")
-    try? await ws.send(error.jsonString())
-    try? await Task.sleep(for: .seconds(0.5))
-    try? await ws.close()
-}
+
