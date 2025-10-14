@@ -7,6 +7,7 @@
 
 
 import Vapor
+import AlpacaMarketDataHub
 
 // MARK: - Configure
 func configure(_ app: Application, _ hub: WebSocketHub) throws {

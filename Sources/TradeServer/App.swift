@@ -1,4 +1,5 @@
 import Vapor
+import AlpacaMarketDataHub
 
 @main
 struct AppMain {

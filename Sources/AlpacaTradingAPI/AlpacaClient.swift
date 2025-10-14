@@ -21,7 +21,6 @@
 
 import Foundation
 import Logging
-import NUTool
 
 public final class AlpacaClient {
     public enum Environment: String {

@@ -7,19 +7,24 @@
 import Foundation
 
 ///Alpaca server will append these new values to existing ones
-struct AlpacaSubscriptionRequestMessage: Codable,Sendable {
-    var action: String = "subscribe"
-    var trades: [String]? = nil
-    var quotes: [String]? = nil
-    var bars: [String]? = nil
+public struct AlpacaSubscriptionRequestMessage: Codable,Sendable {
+    public var action: String = "subscribe"
+    public var trades: [String]? = nil
+    public var quotes: [String]? = nil
+    public var bars: [String]? = nil
     
-    func jsonString() async -> String {
+    public init( trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
+        self.trades = trades
+        self.quotes = quotes
+        self.bars = bars
+    }
+    public func jsonString() async -> String {
         let data = (try? JSONEncoder().encode(self)) ?? Data()
         let jsonString = String(data: data, encoding: .utf8) ?? ""
         return jsonString
     }
     
-    static func loadFromString(_ text: String) -> AlpacaSubscriptionRequestMessage?{
+    public static func loadFromString(_ text: String) -> AlpacaSubscriptionRequestMessage?{
         let data = text.data(using: .utf8) ?? Data()
         let message = try? JSONDecoder().decode(AlpacaSubscriptionRequestMessage.self, from: data)
         guard message?.action == "subscribe" else {

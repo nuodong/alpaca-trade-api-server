@@ -9,7 +9,7 @@ import Vapor
 import NIOCore
 
 ///This API connectes to Alpaca  WebSocket stream for real-time market data.
-actor AlpacaMarketWebsocketClient {
+public actor AlpacaMarketWebsocketClient {
     private let apiKey: String
     private let apiSecret: String
     
@@ -21,7 +21,7 @@ actor AlpacaMarketWebsocketClient {
     
     private var websocket: WebSocket? = nil
     
-    enum Feed: String {
+    public enum Feed: String {
         case test
         case iex
         case iex_extended
@@ -29,7 +29,7 @@ actor AlpacaMarketWebsocketClient {
         case sip
         
     }
-    init(apiKey: String, apiSecret: String, feed: Feed) {
+    public init(apiKey: String, apiSecret: String, feed: Feed) {
         self.apiKey = apiKey
         self.apiSecret = apiSecret
         self.url = "wss://stream.data.alpaca.markets/v2/\(feed.rawValue)"

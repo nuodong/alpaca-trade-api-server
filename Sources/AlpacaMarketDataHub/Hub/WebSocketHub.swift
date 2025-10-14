@@ -13,7 +13,7 @@ import Vapor
 
 ///currently, one 1 alpaca websocket client is used. Call start() once.
 ///when a app client's websocket is closed, hub will remove it from the sessions
-actor WebSocketHub {
+public actor WebSocketHub {
     var sessions: [String: ClientSession] = [:]
     //subscribed items from Alpaca
     private var trades: Set<String> = []
@@ -23,10 +23,11 @@ actor WebSocketHub {
     
     private var alpaca: AlpacaMarketWebsocketClient
     
-    init(alpaca: AlpacaMarketWebsocketClient) {
+    public init(alpaca: AlpacaMarketWebsocketClient) {
         self.alpaca = alpaca
     }
-    func start() async throws{
+    
+    public func start() async throws{
         await alpaca.start { [weak self] in
             //on connected, authenticatd
             guard let self else {return}
@@ -55,7 +56,7 @@ actor WebSocketHub {
     }
     
     // lifecycle
-    func addSession(_ session: ClientSession) async {
+    public func addSession(_ session: ClientSession) async {
         let id = session.id
         let ws = session.ws
         ws.onClose.whenComplete { [weak self] _ in
@@ -68,7 +69,7 @@ actor WebSocketHub {
         await sessions[id]?.enqueue(codable: message)
     }
     
-    func removeSession(id: String) async {
+    public func removeSession(id: String) async {
         //TODO: remove from Alpaca if any of its subscriptions not shared used by others.
 
         await sessions.removeValue(forKey: id)?.close()
@@ -76,12 +77,12 @@ actor WebSocketHub {
         
     }
     
-    func getSession(id: String) -> ClientSession? {
+    public func getSession(id: String) -> ClientSession? {
         return sessions[id]
     }
     
     /// subscrbe to alpaca if new, save subscribed symbols to client session
-    func subscribe(_ id: String, _ subscription: AlpacaSubscriptionRequestMessage) async throws {
+    public func subscribe(_ id: String, _ subscription: AlpacaSubscriptionRequestMessage) async throws {
         guard let clientSession = sessions[id] else {
             return
         }
@@ -105,7 +106,7 @@ actor WebSocketHub {
     }
     
     ///when receive the response from alpaca server, update the subscribed array
-    func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
+    public func updateSubscription(trades: [String]? = nil, quotes: [String]? = nil, bars: [String]? = nil) {
         if let trades {
             self.trades = Set(trades)
         }
@@ -118,7 +119,7 @@ actor WebSocketHub {
     }
     
     /// distribute to app clients
-    func distributeToClientSessions(_ text: String) async {
+    public func distributeToClientSessions(_ text: String) async {
         //Alpaca returned market data array may contains different data, different stocks in one websocket response
         //[String] contains the market data json string, such as {"T":"q","S":"BABA","bx":"V","bp":172,"bs":1,"ax":"V","ap":172.43,"as":2,"c":["R"],"z":"A","t":"2025-10-09T18:24:00.412001659Z"}
         var trades: [StockSymbol: [AlpacaTradeMessage]] = [:]

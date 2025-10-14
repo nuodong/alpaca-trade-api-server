@@ -12,7 +12,7 @@
 import Vapor
 
 ///This is the websocet session from App client to this server.
-actor ClientSession {
+public actor ClientSession {
     let id: String
     let ws: WebSocket
     private let config: WSConfig
@@ -26,7 +26,7 @@ actor ClientSession {
     var quotes: [StockSymbol] = []
     var bars: [StockSymbol] = []
     
-    init(id: String, ws: WebSocket, config: WSConfig) {
+    public init(id: String, ws: WebSocket, config: WSConfig) {
         self.id = id
         self.ws = ws
         self.config = config

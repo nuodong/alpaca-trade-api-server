@@ -1,5 +1,5 @@
 import Testing
-@testable import alpaca_market_stream_server
+@testable import AlpacaMarketDataStream
 
 @Test func example() async throws {
     let client = AlpacaMarketWebsocketClient(apiKey: "PKK5J916VK887J82WPMF", apiSecret: "bTEAEeC7XCXiEgYhjmDvjntAsWRTCa7ayDcqnqZc", feed: .iex_extended)

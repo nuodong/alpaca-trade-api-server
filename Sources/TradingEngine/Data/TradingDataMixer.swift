@@ -1,14 +1,16 @@
 //
-//  MarketDataSource.swift
+//  TradingDataMixer.swift
 //  alpaca-market-stream-server
 //
 //  Created by Peijun Zhao on 10/13/25.
 //
 
-public actor MarketDataSource {
-    public static let shared = MarketDataSource()
+public actor TradingDataMixer {
+    public static let shared = TradingDataMixer()
+    
     public var marketDataStream: AsyncStream<MarketData>
     private var marketDataStreamContinuation: AsyncStream<MarketData>.Continuation
+    
     public init() {
         var cont: AsyncStream<MarketData>.Continuation!
         let steam: AsyncStream<MarketData> = .init { continuation in

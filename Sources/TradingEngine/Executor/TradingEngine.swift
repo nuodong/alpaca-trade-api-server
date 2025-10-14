@@ -8,7 +8,7 @@
 import Foundation
 
 public actor TradingEngine {
-    public var marketDataSource = MarketDataSource.shared
+    public var tradingDataMixer = TradingDataMixer.shared
     public var lastExecution: [String: Date] = [:]
     
     public init() {}
